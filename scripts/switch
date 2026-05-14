@@ -63,6 +63,17 @@ switch-start() {
   echo "$id"
 }
 
+switch-boot() {
+  local system=$1
+  if ! [ -x "$system/bin/switch-to-configuration" ]; then
+    echo "$system doesn't appear to be a NixOS system" >&2
+    exit 1
+  fi
+
+  nix-env -p /nix/var/nix/profiles/system --set "$system"
+  switch "$system" boot
+}
+
 switch-active() {
   local id=$1
   cat "system-$id/status"
@@ -165,6 +176,9 @@ switch-run() {
 case "$1" in
   "start")
     switch-start "$2"
+    ;;
+  "boot")
+    switch-boot "$2"
     ;;
   "active")
     switch-active "$2"

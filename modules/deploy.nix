@@ -41,6 +41,17 @@ let
         '';
       };
 
+      switchAction = lib.mkOption {
+        type = lib.types.enum [ "switch" "boot" ];
+        default = "switch";
+        description = ''
+          The switch action to use when deploying. "switch" activates the new
+          system immediately with confirmation and automatic rollback support.
+          "boot" only sets the system as the default for the next reboot,
+          without activating it immediately.
+        '';
+      };
+
       ignoreFailingSystemdUnits = lib.mkOption {
         type = types.bool;
         default = false;
@@ -336,6 +347,15 @@ in {
 
           echo "Deploying.." >&2
 
+          ${if nodeConfig.switchAction == "boot" then ''
+          echo "Setting next boot system..." >&2
+          id="N/A"
+          if ssh "$HOST" exec "${nodeConfig.closurePaths.switch}/bin/switch" boot "${nodeConfig.closurePaths.system}"; then
+            status="success"
+          else
+            status="failure"
+          fi
+          '' else ''
           echo "Triggering system switcher..." >&2
           id=$(ssh "$HOST" exec "${nodeConfig.closurePaths.switch}/bin/switch" start "${nodeConfig.closurePaths.system}")
 
@@ -352,6 +372,7 @@ in {
             set -e
             sleep 1
           done
+          ''}
 
           ${nodeConfig.postDeployScript}
 
